@@ -19,7 +19,7 @@ class mywindow(QtWidgets.QMainWindow):
 
         # Устанавливаем изображение формулы
         self.ui.setupUi(self)
-        pixmap = QPixmap("img/img.jpg")
+        pixmap = QPixmap("img/0.png")
         self.ui.formulaLabel.setPixmap(pixmap)
 
         # Устанавливаем коннекты
@@ -27,8 +27,13 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.probability.currentCellChanged.connect(self.setCell_k_table)
         self.ui.spinBox.editingFinished.connect(self.setTableRowCount)
         self.ui.solveButton.clicked.connect(self.solve)
+        self.ui.comboBox.currentIndexChanged.connect(self.changeFormulaImg)
 
 
+    def changeFormulaImg(self):
+        solveType = self.ui.comboBox.currentIndex()
+        self.ui.formulaLabel.setPixmap(QPixmap("img/" + str(solveType) + ".png"))
+        
 
     '''Изменить текущую строку таблицы k элементов, при изменении строки n элементов'''
     def setCell_k_table(self):
