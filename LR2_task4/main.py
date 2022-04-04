@@ -25,13 +25,19 @@ class mywindow(QtWidgets.QMainWindow):
         # Устанавливаем коннекты
         self.ui.neededHypotises.currentCellChanged.connect(self.setCell_n_table)
         self.ui.probability.currentCellChanged.connect(self.setCell_k_table)
-        self.ui.spinBox.editingFinished.connect(self.enter)
+        self.ui.spinBox.editingFinished.connect(self.setTableRowCount)
         self.ui.solveButton.clicked.connect(self.solve)
 
 
 
     '''Изменить текущую строку таблицы k элементов, при изменении строки n элементов'''
     def setCell_k_table(self):
+        curCell = self.ui.probability.currentRow()
+        self.ui.neededHypotises.setCurrentCell(curCell, 0)
+
+
+    '''Изменить текущую строку таблицы n элементов, при изменении строки k элементов'''
+    def setCell_n_table(self):
         curCell = self.ui.neededHypotises.currentRow()
         self.ui.probability.setCurrentCell(curCell, 0)
 
@@ -49,12 +55,6 @@ class mywindow(QtWidgets.QMainWindow):
                 self.addRow()
 
 
-    '''Изменить текущую строку таблицы n элементов, при изменении строки k элементов'''
-    def setCell_n_table(self):
-        curCell = self.ui.neededHypotises.currentRow()
-        self.ui.probability.setCurrentCell(curCell, 0)
-
-
     '''Добавить по одной строке в таблицы'''
     def addRow(self):
         lastRow = self.ui.neededHypotises.rowCount()
@@ -64,9 +64,7 @@ class mywindow(QtWidgets.QMainWindow):
         self.ui.neededHypotises.setItem(lastRow, 0, QtWidgets.QTableWidgetItem("0"))
         self.ui.neededHypotises.item(lastRow, 0).setCheckState(QtCore.Qt.CheckState.Unchecked)
         self.updateHeaders()
-        self.ui.spinBox.setValue(self.ui.neededHypotises.rowCount())
-
-        
+        self.ui.spinBox.setValue(self.ui.neededHypotises.rowCount())     
 
 
     '''Удалить по одной строке из таблиц'''
@@ -88,75 +86,33 @@ class mywindow(QtWidgets.QMainWindow):
             self.ui.probability.setVerticalHeaderItem(i, item)
 
 
-    '''Установить m строк в таблицы'''
-    def enter(self):
-        m = self.ui.spinBox.value()
-        rowAmount = self.ui.neededHypotises.rowCount()
-        if m < rowAmount:
-            for i in range(rowAmount - 1, m - 1, -1):
-                self.ui.neededHypotises.setCurrentCell(i, 0)
-                self.removeRow()
-        elif m > rowAmount:
-            for i in range(rowAmount - 1, m - 1, 1):
-                self.addRow()
-
-
-    '''Проверить корректность введенных данных'''
-    def isInputCorrect(self, k, n, m):
-        if n > k:
-            QtWidgets.QMessageBox.information(self, "Ошибка", "n не может быть больше k")
-            return False
-        elif m > k:
-            QtWidgets.QMessageBox.information(self, "Ошибка", "m не может быть больше k")
-            return False
-        
-        k_sum = 0
-        n_sum = 0
-        for i in range(m):
-            k_value = self.ui.neededHypotises(i, 0).text()
-            n_value = self.ui.probability.item(i, 0).text()
-            
-            if not k_value.isnumeric():
-                QtWidgets.QMessageBox.information(self, "Ошибка", "недопустимое значение H_" + str(i + 1) + " = " + k_value)
-                return False
-            elif not n_value.isnumeric():
-                QtWidgets.QMessageBox.information(self, "Ошибка", "недопустимое значение P(A)_" + str(i + 1) + " = " + n_value)
-                return False
-            elif int(n_value) > int(k_value):
-                QtWidgets.QMessageBox.information(self, "Ошибка", "P(A)_" + str(i + 1) + " не может быть больше H_" + str(i + 1))
-                return False
-            
-            k_sum += int(k_value)
-            n_sum += int(n_value)
-        
-        if k_sum != k:
-            QtWidgets.QMessageBox.information(self, "Ошибка", "сумма k_i должна равняться k")
-            return False
-        elif n_sum != n:
-            QtWidgets.QMessageBox.information(self, "Ошибка", "сумма n_i должна равняться n")
-            return False
-        return True
-
-
     '''Вычислить результирующее значение'''
     def solve(self):
         k = self.ui.spinBox.value()
-
-        hypotisesNumber = self.ui.spinBox.value()
-
-        #if (self.ui.comboBox.currentIndex() == 0):
-
-        # Проверить введенные данные
-        #if not self.isInputCorrect(k, n, m):
-         #   return
+        hypotiseSum = 0
         hypotisesList = []
         probabilityList = []
-        # В числителе произведение всех сочетаний n_i по k_i
-        for i in range(0, k):
-            hypotisesList.append(float(self.ui.neededHypotises.item(i, 0).text()))
-            probabilityList.append(float(self.ui.probability.item(i, 0).text()))
-                
 
+        try:
+            for i in range(0, k):
+                hypotise = float(self.ui.neededHypotises.item(i, 0).text())
+                probability = float(self.ui.probability.item(i, 0).text())
+                if hypotise < 0 or hypotise > 1 or probability < 0 or probability > 1:
+                    QtWidgets.QMessageBox.warning(self, "Ошибка ввода", "Некорректное значение вероятности в строке " + str(i + 1)
+                    + "\nЗначение вероятности должно лежать в интервале [0; 1]")
+                    return
+                else:
+                    hypotisesList.append(hypotise)
+                    probabilityList.append(probability)
+                    hypotiseSum += hypotise
+        except:
+            QtWidgets.QMessageBox.warning(self, "Ошибка ввода", "Некорректный формат ввода в строке " + str(i + 1)
+            + "\nВероятность задается десятичной дробью, целая часть от дробной должна отделяться точкой \".\"")
+            return
+             
+        if round(hypotiseSum, 12) != 1:
+            QtWidgets.QMessageBox.warning(self, "Ошибка ввода", "Сумма вероятностей гипотез должна равняться 1")
+            return
         
         # Полученный числитель разделить на число сочетаний n по k
         if (self.ui.comboBox.currentIndex() == 0) :
@@ -167,12 +123,12 @@ class mywindow(QtWidgets.QMainWindow):
             strResult = ""
             for i in range(0, k):
                 if self.ui.neededHypotises.item(i, 0).checkState() == QtCore.Qt.CheckState.Checked:
-                    tmp = round(Probability.bayesFormula(i, hypotisesList, probabilityList), 8)
-                    strResult = strResult + "P_A_(H_" + str(i + 1) + ") = " + str(tmp) + "\n"
+                    tmp = "{:01.12f}".format(Probability.bayesFormula(i, hypotisesList, probabilityList), 12)
+                    strResult = strResult + "P_A_(H_" + str(i + 1) + ") = " + tmp + "\n"
+            if strResult == "":
+                QtWidgets.QMessageBox.warning(self, "Ошибка ввода", "Не выбрана ни одна гипотеза\nОтметьте галочкой в таблице гипотезы для которых проиводить вычисления")
+                return
             self.ui.textEdit.setText(strResult)
-             
-
-        # Вывести результат в поле ответа
         
 
 
